@@ -1,0 +1,38 @@
+{
+    "name": "Webfront Dev Container",
+    "build": {
+      "context": "../",
+      "dockerfile": "../Dockerfile",
+    },
+    "workspaceMount": "source=${localWorkspaceFolder}/,target=/app,type=bind,consistency=cached",
+    "workspaceFolder": "/app",
+    "runArgs": [
+      "--add-host=localhost:host-gateway",
+      "--privileged"
+      // This makes localhost point to the host machine
+    ],
+    "mounts": [
+      // "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
+    "customizations": {
+      "env": {
+      },
+      "vscode": {
+        "extensions": [
+          "JuanBlanco.solidity",
+          "ms-azuretools.vscode-docker",
+          "ms-vscode.vscode-remote-extensionpack",
+          "ms-python.python"
+        ],
+        "settings": {
+          "terminal.integrated.shell.linux": "/bin/bash"
+        }
+      }
+    },
+    "forwardPorts": [
+      8050,
+      8080,
+      8081,
+      "8088:80"
+    ]
+  }

@@ -1,0 +1,13 @@
+.env
+node_modules
+dist
+.DS_Store
+*.pickle
+*.log
+*.pkl
+*.md
+old_backend
+webfront
+config.yaml
+sites.json
+__pycache__

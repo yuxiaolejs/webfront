@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import logging
+from uuid import UUID
+
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Response, status
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+import sites
+import cert_tasks
+
+logger = logging.getLogger("webfront")
+
+
+def create_app() -> FastAPI:
+    app = FastAPI(title="Webfront Nginx Manager", version="0.1.0")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.get("/health")
+    def health() -> dict:
+        return {"status": "ok"}
+
+    @app.get("/api/v1/sites")
+    def list_sites() -> list[dict]:
+        return [s.model_dump(mode="json") for s in sites.list_sites()]
+
+    @app.post("/api/v1/sites", status_code=status.HTTP_201_CREATED)
+    def create_site(payload: sites.SitePayload) -> dict:
+        record = sites.create_site(payload)
+        return record.model_dump(mode="json")
+
+    @app.get("/api/v1/sites/{site_id}")
+    def get_site(site_id: UUID) -> dict:
+        record = sites.get_site(site_id)
+        if not record:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Site not found"
+            )
+        return record.model_dump(mode="json")
+
+    @app.put("/api/v1/sites/{site_id}")
+    def update_site(site_id: UUID, payload: sites.SitePayload) -> dict:
+        try:
+            record = sites.update_site(site_id, payload)
+        except KeyError:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Site not found"
+            ) from None
+        return record.model_dump(mode="json")
+
+    @app.delete("/api/v1/sites/{site_id}", status_code=status.HTTP_204_NO_CONTENT)
+    def delete_site(site_id: UUID) -> Response:
+        sites.delete_site(site_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    return app
+
+app = create_app()
+
+cert_tasks.start_cert_renewal_task()
