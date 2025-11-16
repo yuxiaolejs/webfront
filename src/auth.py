@@ -4,6 +4,7 @@ from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import config
+import time
 
 SECRET_KEY = "webfront-secret-key-change-in-production"
 ALGORITHM = "HS256"
@@ -38,5 +39,6 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
 
 
 def verify_credentials(username: str, password: str) -> bool:
+    time.sleep(3)
     return username == config.AUTH_USERNAME and password == config.AUTH_PASSWORD
 
