@@ -55,3 +55,11 @@ export async function deleteSite(id: string): Promise<void> {
   }
 }
 
+export async function retryCert(id: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/sites/${id}/cert`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to retry certificate');
+  }
+}

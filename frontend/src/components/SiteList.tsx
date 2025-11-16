@@ -17,7 +17,7 @@ import {
   Chip,
 } from '@mui/material';
 import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
-import { listSites, deleteSite } from '../api';
+import { listSites, deleteSite, retryCert } from '../api';
 import type { Site } from '../types';
 
 interface SiteListProps {
@@ -74,6 +74,15 @@ export default function SiteList({ onEdit, onAdd, refreshTrigger }: SiteListProp
         <Typography color="error">{error}</Typography>
       </Container>
     );
+  }
+
+  const retryCertHandler = async (site: Site) => {
+    try {
+      await retryCert(site.id);
+      alert('Certificate retry task created successfully');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to create certificate retry task');
+    }
   }
 
   return (
@@ -134,6 +143,16 @@ export default function SiteList({ onEdit, onAdd, refreshTrigger }: SiteListProp
                     >
                       <DeleteIcon />
                     </IconButton>
+                    {site.ssl && (
+                      <Button
+                        size="small"
+                        onClick={() => retryCertHandler(site)}
+                        aria-label="retry cert"
+                        sx={{ ml: 1 }}
+                      >
+                        Retry Cert
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
