@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 import sites
@@ -92,6 +95,38 @@ def create_app() -> FastAPI:
             )
         cert_tasks.add_cert_task(record.domain)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    # Serve static files from dist folder if it exists
+    dist_path = Path("dist")
+    if dist_path.exists() and dist_path.is_dir():
+        # Mount static assets
+        app.mount("/assets", StaticFiles(directory=str(dist_path / "assets")), name="assets")
+        
+        # Serve index.html for all non-API routes (SPA routing)
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str, request: Request):
+            # Don't serve static files for API routes or health endpoint
+            if full_path.startswith("api/") or full_path == "health":
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            
+            # Check if it's a file request (has extension)
+            file_path = dist_path / full_path
+            if file_path.exists() and file_path.is_file():
+                return FileResponse(str(file_path))
+            
+            # For all other routes, serve index.html (SPA routing)
+            index_path = dist_path / "index.html"
+            if index_path.exists():
+                return FileResponse(str(index_path))
+            
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        # If dist doesn't exist, return 404 for all non-API routes
+        @app.get("/{full_path:path}")
+        async def not_found(full_path: str):
+            if full_path.startswith("api/") or full_path == "health":
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Frontend not built")
 
     return app
 

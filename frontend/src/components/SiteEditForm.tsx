@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
 import { getSite, createSite, updateSite } from '../api';
-import type { Site, SitePayload } from '../types';
+import type { SitePayload } from '../types';
 
 interface SiteEditFormProps {
   siteId: string | null;

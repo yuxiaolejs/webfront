@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import SiteList from './components/SiteList';
 import SiteEditForm from './components/SiteEditForm';
@@ -46,7 +46,7 @@ export default function App() {
     setRefreshTrigger((prev) => prev + 1);
   };
 
-  const handleLogin = (token: string) => {
+  const handleLogin = () => {
     setIsAuthenticated(true);
   };
 

@@ -2,7 +2,7 @@
     "name": "Webfront Dev Container",
     "build": {
       "context": "../",
-      "dockerfile": "../Dockerfile",
+      "dockerfile": "../Dockerfile.dev",
     },
     "workspaceMount": "source=${localWorkspaceFolder}/,target=/app,type=bind,consistency=cached",
     "workspaceFolder": "/app",
