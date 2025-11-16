@@ -2,6 +2,7 @@ import datastore
 import os
 import subprocess
 from config import NGX_CERT_DIR, NGX_CONF_DIR
+import traceback
 
 def generate_nginx_config(site_id):
     site = datastore.get_site(site_id)
@@ -55,8 +56,10 @@ def _run_command(cmd, timeout=10):
 
 def reload_nginx():
     try:
-        _run_command(["nginx", "-t"])
-        _run_command(["nginx", "-s", "reload"])
+        _run_command(["/usr/sbin/nginx", "-t"])
+        _run_command(["/usr/sbin/nginx", "-s", "reload"])
         return True
     except Exception as e:
+        print(f"Failed to reload nginx: {e}")
+        print(traceback.format_exc())
         return False
