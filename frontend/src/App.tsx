@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import SiteList from './components/SiteList';
 import SiteEditForm from './components/SiteEditForm';
+import Login from './components/Login';
+import { clearToken, getToken } from './api';
 import type { Site } from './types';
 
 const theme = createTheme({
@@ -13,9 +15,15 @@ const theme = createTheme({
 type View = 'list' | 'edit' | 'add';
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [view, setView] = useState<View>('list');
   const [selectedSite, setSelectedSite] = useState<Site | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    const token = getToken();
+    setIsAuthenticated(!!token);
+  }, []);
 
   const handleEdit = (site: Site) => {
     setSelectedSite(site);
@@ -38,6 +46,24 @@ export default function App() {
     setRefreshTrigger((prev) => prev + 1);
   };
 
+  const handleLogin = (token: string) => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    clearToken();
+    setIsAuthenticated(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Login onLogin={handleLogin} />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -46,6 +72,7 @@ export default function App() {
           onEdit={handleEdit}
           onAdd={handleAdd}
           refreshTrigger={refreshTrigger}
+          onLogout={handleLogout}
         />
       )}
       {(view === 'edit' || view === 'add') && (

@@ -5,3 +5,5 @@ dotenv
 cryptography
 requests
 pyyaml
+python-jose[cryptography]
+python-multipart

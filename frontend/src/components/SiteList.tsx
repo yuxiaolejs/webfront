@@ -16,7 +16,7 @@ import {
   Paper,
   Chip,
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, Add as AddIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import { listSites, deleteSite, retryCert } from '../api';
 import type { Site } from '../types';
 
@@ -24,9 +24,10 @@ interface SiteListProps {
   onEdit: (site: Site) => void;
   onAdd: () => void;
   refreshTrigger: number;
+  onLogout?: () => void;
 }
 
-export default function SiteList({ onEdit, onAdd, refreshTrigger }: SiteListProps) {
+export default function SiteList({ onEdit, onAdd, refreshTrigger, onLogout }: SiteListProps) {
   const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +39,11 @@ export default function SiteList({ onEdit, onAdd, refreshTrigger }: SiteListProp
       const data = await listSites();
       setSites(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load sites');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load sites';
+      setError(errorMessage);
+      if (errorMessage === 'Unauthorized' && onLogout) {
+        onLogout();
+      }
     } finally {
       setLoading(false);
     }
@@ -91,9 +96,16 @@ export default function SiteList({ onEdit, onAdd, refreshTrigger }: SiteListProp
         <Typography variant="h4" component="h1">
           Sites
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={onAdd}>
-          Add Site
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {onLogout && (
+            <Button variant="outlined" startIcon={<LogoutIcon />} onClick={onLogout}>
+              Logout
+            </Button>
+          )}
+          <Button variant="contained" startIcon={<AddIcon />} onClick={onAdd}>
+            Add Site
+          </Button>
+        </Box>
       </Box>
 
       {sites.length === 0 ? (

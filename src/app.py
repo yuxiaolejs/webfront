@@ -3,14 +3,20 @@ from __future__ import annotations
 import logging
 from uuid import UUID
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import sites
 import cert_tasks
+import auth
 
 logger = logging.getLogger("webfront")
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
 
 
 def create_app() -> FastAPI:
@@ -28,17 +34,28 @@ def create_app() -> FastAPI:
     def health() -> dict:
         return {"status": "ok"}
 
+    @app.post("/api/v1/login")
+    def login(login_data: LoginRequest) -> dict:
+        if auth.verify_credentials(login_data.username, login_data.password):
+            access_token = auth.create_access_token(data={"sub": login_data.username})
+            return {"access_token": access_token, "token_type": "bearer"}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+            )
+
     @app.get("/api/v1/sites")
-    def list_sites() -> list[dict]:
+    def list_sites(token_data: dict = Depends(auth.verify_token)) -> list[dict]:
         return [s.model_dump(mode="json") for s in sites.list_sites()]
 
     @app.post("/api/v1/sites", status_code=status.HTTP_201_CREATED)
-    def create_site(payload: sites.SitePayload) -> dict:
+    def create_site(payload: sites.SitePayload, token_data: dict = Depends(auth.verify_token)) -> dict:
         record = sites.create_site(payload)
         return record.model_dump(mode="json")
 
     @app.get("/api/v1/sites/{site_id}")
-    def get_site(site_id: UUID) -> dict:
+    def get_site(site_id: UUID, token_data: dict = Depends(auth.verify_token)) -> dict:
         record = sites.get_site(site_id)
         if not record:
             raise HTTPException(
@@ -47,7 +64,7 @@ def create_app() -> FastAPI:
         return record.model_dump(mode="json")
 
     @app.put("/api/v1/sites/{site_id}")
-    def update_site(site_id: UUID, payload: sites.SitePayload) -> dict:
+    def update_site(site_id: UUID, payload: sites.SitePayload, token_data: dict = Depends(auth.verify_token)) -> dict:
         try:
             record = sites.update_site(site_id, payload)
         except KeyError:
@@ -57,12 +74,12 @@ def create_app() -> FastAPI:
         return record.model_dump(mode="json")
 
     @app.delete("/api/v1/sites/{site_id}", status_code=status.HTTP_204_NO_CONTENT)
-    def delete_site(site_id: UUID) -> Response:
+    def delete_site(site_id: UUID, token_data: dict = Depends(auth.verify_token)) -> Response:
         sites.delete_site(site_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @app.post("/api/v1/sites/{site_id}/cert")
-    def create_cert_retry_task(site_id: UUID) -> dict:
+    def create_cert_retry_task(site_id: UUID, token_data: dict = Depends(auth.verify_token)) -> dict:
         record = sites.get_site(site_id)
         if not record:
             raise HTTPException(
