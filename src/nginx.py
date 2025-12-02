@@ -9,7 +9,17 @@ def generate_nginx_config(site_id):
     if not site:
         raise ValueError(f"Site with ID {site_id} not found")
     
-    headers = "".join([f'proxy_set_header {k} {v};\n        ' for k, v in site.proxy_headers.items()])
+    proxy_header = {
+        "Upgrade": "$http_upgrade",
+        "Connection": "upgrade",
+        "Host": "$host",
+        "X-Real-IP": "$remote_addr",
+        "X-Forwarded-For": "$proxy_add_x_forwarded_for",
+        "X-Forwarded-Proto": "$scheme",
+        **site.proxy_headers,
+    }
+    
+    headers = "".join([f'proxy_set_header {k} {v};\n        ' for k, v in proxy_header.items()])
 
     config = f"""server {{
     listen 80;
@@ -17,6 +27,8 @@ def generate_nginx_config(site_id):
     location ^~ / {{
         proxy_pass {site.proxy_pass};
         {headers}
+        proxy_buffering off;
+        proxy_request_buffering off;
     }}
 """
     if site.ssl:
