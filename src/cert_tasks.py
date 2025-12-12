@@ -5,7 +5,6 @@ from config import NGX_CERT_DIR, CF_ZONE_ID_MAP
 import os
 from nginx import reload_nginx, generate_all_configs
 import threading
-import sys
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from datetime import datetime, timedelta
@@ -42,14 +41,21 @@ def execute_cert_tasks():
                 cert_data = get_cert_for_domains(domains, CF_ZONE_ID_MAP)
                 print(f"Got cert data:", cert_data)
                 cert = cert_data.get("certificate", "")
+                ca_bundle = cert_data.get("ca_bundle", "")
                 key = cert_data.get("private_key", "")
                 print(f"Cert {cert}, Key {key}", flush=True)
                 if cert and key:
+                    # Combine certificate with CA bundle for nginx
+                    # nginx requires: domain cert first, then CA bundle
+                    combined_cert = cert
+                    if ca_bundle:
+                        combined_cert = cert.rstrip() + "\n" + ca_bundle.rstrip() + "\n"
+                    
                     with open(cert_path, "w") as cert_file:
-                        cert_file.write(cert)
+                        cert_file.write(combined_cert)
                     with open(key_path, "w") as key_file:
                         key_file.write(key)
-                    print(f"Certificate for {domain} saved successfully")
+                    print(f"Certificate for {domain} saved successfully (with CA bundle)")
                     generate_all_configs()
                     reload_nginx()
                 else:
